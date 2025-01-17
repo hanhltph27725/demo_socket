@@ -1,22 +1,45 @@
+import type { Product } from '@/constants/product-type';
 import { Client } from '@stomp/stompjs';
 import axios from 'axios';
 import classNames from 'classnames/bind';
 import React from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import SockJS from 'sockjs-client';
 import styles from './styles.module.scss';
+import DraggableColumn from '@/components/DraggableColumn';
 const cx = classNames.bind(styles);
-
-interface Product {
-  id: number;
-  code: string;
-  name: string;
-  price: number;
-}
 
 const Product: React.FC = (): JSX.Element => {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [newProduct, setNewProduct] = React.useState({ code: '', name: '' });
   const [stompClient, setStompClient] = React.useState<Client | null>(null);
+  const [sortConfig, setSortConfig] = React.useState<{
+    key: keyof Product;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  const [columnOrder, setColumnOrder] = React.useState<(keyof Product)[]>([
+    'id',
+    'code',
+    'name',
+    'price',
+  ]);
+
+  const sortedProducts = React.useMemo(() => {
+    if (!sortConfig) return products;
+    const sorted = [...products];
+    sorted.sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    return sorted;
+  }, [products, sortConfig]);
 
   React.useEffect(() => {
     const socket = new SockJS('http://localhost:8080/my-websocket-endpoint');
@@ -92,7 +115,26 @@ const Product: React.FC = (): JSX.Element => {
       maximumFractionDigits: 1,
     }).format(price);
   };
-  console.log(products);
+
+  const handleSort = (key: keyof Product) => {
+    setSortConfig((prev) => {
+      if (prev && prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const swapColumns = (dragIndex: number, hoverIndex: number) => {
+    setColumnOrder((prevOrder) => {
+      const newOrder = [...prevOrder];
+      [newOrder[dragIndex], newOrder[hoverIndex]] = [
+        newOrder[hoverIndex],
+        newOrder[dragIndex],
+      ];
+      return newOrder;
+    });
+  };
 
   return (
     <div className={cx('wrapper')}>
@@ -131,27 +173,37 @@ const Product: React.FC = (): JSX.Element => {
           </button>
         </div>
       </div>
-
-      <table className={cx('table')}>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product.id}>
-              <td>{product.id}</td>
-              <td>{product.code}</td>
-              <td>{product.name}</td>
-              <td>{formatPrice(product.price)}</td>
+      <DndProvider backend={HTML5Backend}>
+        <table className={cx('table')}>
+          <thead>
+            <tr>
+              {columnOrder.map((column, index) => (
+                <DraggableColumn
+                  key={column}
+                  column={column}
+                  index={index}
+                  moveColumn={swapColumns}
+                  handleSort={handleSort}
+                />
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedProducts.map((product) => (
+              <tr key={product.id}>
+                {columnOrder.map((column) => (
+                  <td key={column}>
+                    {' '}
+                    {column === 'price'
+                      ? formatPrice(product[column])
+                      : product[column]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </DndProvider>
     </div>
   );
 };
