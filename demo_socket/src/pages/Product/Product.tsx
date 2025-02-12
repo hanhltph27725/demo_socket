@@ -8,6 +8,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import SockJS from 'sockjs-client';
 import styles from './styles.module.scss';
 import DraggableColumn from '@/components/DraggableColumn';
+import DraggableRow from '@/components/DraggableRow';
 const cx = classNames.bind(styles);
 
 const Product: React.FC = (): JSX.Element => {
@@ -109,13 +110,6 @@ const Product: React.FC = (): JSX.Element => {
     }
   };
 
-  const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(price);
-  };
-
   const handleSort = (key: keyof Product) => {
     setSortConfig((prev) => {
       if (prev && prev.key === key) {
@@ -133,6 +127,16 @@ const Product: React.FC = (): JSX.Element => {
         newOrder[dragIndex],
       ];
       return newOrder;
+    });
+  };
+
+  const swapRows = (dragIndex: number, hoverIndex: number) => {
+    setProducts((prevProducts) => {
+      const newProducts = [...prevProducts];
+      const draggedRow = newProducts[dragIndex];
+      newProducts[dragIndex] = newProducts[hoverIndex];
+      newProducts[hoverIndex] = draggedRow;
+      return newProducts;
     });
   };
 
@@ -189,17 +193,14 @@ const Product: React.FC = (): JSX.Element => {
             </tr>
           </thead>
           <tbody>
-            {sortedProducts.map((product) => (
-              <tr key={product.id}>
-                {columnOrder.map((column) => (
-                  <td key={column}>
-                    {' '}
-                    {column === 'price'
-                      ? formatPrice(product[column])
-                      : product[column]}
-                  </td>
-                ))}
-              </tr>
+            {sortedProducts.map((product, index) => (
+              <DraggableRow
+                key={product.id}
+                index={index}
+                product={product}
+                moveRow={swapRows}
+                columnOrder={columnOrder}
+              />
             ))}
           </tbody>
         </table>

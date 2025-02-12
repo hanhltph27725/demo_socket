@@ -1,4 +1,4 @@
-import Product from '@/pages/Product';
+import { Product } from '@/constants/product-type';
 import React from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 
