@@ -29,4 +29,8 @@ public class Product {
 
     @Column(name = "product_price")
     private BigDecimal price;
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
 }
