@@ -38,9 +38,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        working-directory: demo_socket
 
       - name: Build project
         run: npm run build
+        working-directory: demo_socket
 
       - name: Deploy to Vercel
         env:
