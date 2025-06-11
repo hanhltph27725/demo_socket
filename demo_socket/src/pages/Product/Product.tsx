@@ -90,15 +90,9 @@ const Product: React.FC = (): JSX.Element => {
       const randomPrice = Math.floor(Math.random() * 1000000) + 1;
 
       const productToSend = JSON.stringify({
-        id: Date.now(),
         ...newProduct,
         price: randomPrice,
       });
-
-      setProducts((prevProducts) => [
-        ...prevProducts,
-        { id: Date.now(), ...newProduct, price: randomPrice },
-      ]);
 
       stompClient.publish({
         destination: '/app/products',

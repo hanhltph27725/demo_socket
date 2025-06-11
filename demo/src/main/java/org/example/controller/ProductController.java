@@ -24,8 +24,9 @@ public class ProductController {
 
     @MessageMapping("/products")
     @SendTo("/topic/product")
-    public Product create(@RequestBody Product product){
-        return productService.save(product);
+    public List<Product> create(Product product) {
+        productService.save(product);
+        return productService.getAll();
     }
 
     @PutMapping("/update-prices")
