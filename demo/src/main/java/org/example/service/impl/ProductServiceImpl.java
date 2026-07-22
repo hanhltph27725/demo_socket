@@ -1,10 +1,10 @@
 package org.example.service.impl;
 
-import org.example.model.Product;
+import org.example.entity.Product;
 import org.example.repository.ProductRepository;
 import org.example.service.ProductService;
+import org.example.service.SseService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ public class ProductServiceImpl implements ProductService {
     private ProductRepository productRepository;
 
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private SseService sseService;
 
     private final Random random = new Random();
 
@@ -32,7 +32,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product save(Product product) {
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        sseService.broadcast(productRepository.findAll());
+        return saved;
     }
 
     @Override
@@ -47,6 +49,6 @@ public class ProductServiceImpl implements ProductService {
 
         productRepository.saveAll(products);
 
-        messagingTemplate.convertAndSend("/topic/product", products);
+        sseService.broadcast(products);
     }
 }

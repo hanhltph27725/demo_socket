@@ -1,4 +1,5 @@
 export enum UrlInternal {
   HOME = '/',
-  PAGE_ONE = '/page1',
+  PRODUCT = '/product',
+  CHAT = '/chat',
 }

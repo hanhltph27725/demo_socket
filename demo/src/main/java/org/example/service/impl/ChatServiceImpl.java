@@ -1,0 +1,55 @@
+package org.example.service.impl;
+
+import org.example.model.ChatMessage;
+import org.example.service.ChatService;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+@Service
+public class ChatServiceImpl implements ChatService {
+
+    private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+
+    private final List<ChatMessage> messages = new CopyOnWriteArrayList<>();
+
+    private static final int MAX_HISTORY = 100;
+    private static final long SSE_TIMEOUT = 30 * 60 * 1000L;
+
+    @Override
+    public SseEmitter subscribe() {
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
+
+        emitter.onCompletion(() -> emitters.remove(emitter));
+        emitter.onTimeout(() -> emitters.remove(emitter));
+        emitter.onError(e -> emitters.remove(emitter));
+
+        emitters.add(emitter);
+        return emitter;
+    }
+
+    @Override
+    public void send(ChatMessage message) {
+        messages.add(message);
+        if (messages.size() > MAX_HISTORY) {
+            messages.remove(0);
+        }
+
+        emitters.forEach(emitter -> {
+            try {
+                emitter.send(SseEmitter.event().name("message").data(message));
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+                emitters.remove(emitter);
+            }
+        });
+    }
+
+    @Override
+    public List<ChatMessage> history() {
+        return messages;
+    }
+}
