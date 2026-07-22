@@ -1,30 +1,36 @@
 package org.example.controller;
 
-import org.example.model.Product;
+import org.example.entity.Product;
 import org.example.service.ProductService;
+import org.example.service.SseService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = {"http://localhost:4200", "https://demo-socket-tau.vercel.app"})
 public class ProductController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private SseService sseService;
 
     @GetMapping("/list")
     public List<Product> getAllProduct(){
         return productService.getAll();
     }
 
-    @MessageMapping("/products")
-    @SendTo("/topic/product")
-    public List<Product> create(Product product) {
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream() {
+        return sseService.subscribe();
+    }
+
+    @PostMapping("/products")
+    public List<Product> create(@RequestBody Product product) {
         productService.save(product);
         return productService.getAll();
     }
